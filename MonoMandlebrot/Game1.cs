@@ -13,16 +13,16 @@ namespace MonoMandlebrot
     {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
-        List<PositionContainer> calulatedPoints;
         List<Vector2> trappedPoints;
+        Dictionary<Vector2, int> escapedPoints;
         Texture2D image;
         float xMin = -2f;
         float xMax = 2f;
         float yMin = -2f;
         float yMax = 2f;
 
-        const int displayWidth = 1024;
-        const int displayHeight = 768;
+        const int displayWidth = 600;
+        const int displayHeight = 600;
 
         bool reRunNumbers = true;
         public Game1()
@@ -43,6 +43,7 @@ namespace MonoMandlebrot
         {
             // TODO: Add your initialization logic here
             trappedPoints = new List<Vector2>();
+            escapedPoints = new Dictionary<Vector2, int>();
             base.Initialize();
         }
 
@@ -141,15 +142,21 @@ namespace MonoMandlebrot
         {
             GraphicsDevice.Clear(Color.White);
 
-            // TODO: Add your drawing code here
-            //spriteBatch.Begin(SpriteSortMode.Deferred, null, null, null, null, null, Matrix.CreateTranslation(-1 * (GraphicsDevice.Viewport.X / 2), -1 * (GraphicsDevice.Viewport.Y / 2), 0) * Matrix.CreateScale(2));
-            //spriteBatch.Begin(SpriteSortMode.Deferred, null, null, null, null, null, Matrix.CreateScale(imageScale) * Matrix.CreateTranslation(position.X,position.Y,0));
             spriteBatch.Begin(SpriteSortMode.Deferred, null, null, null, null, null, Matrix.CreateScale(1));
 
             foreach (Vector2 point in trappedPoints ?? Enumerable.Empty<Vector2>())
             {
-                Vector2 location = point;
-                spriteBatch.Draw(image, location, Color.Black);
+                spriteBatch.Draw(image, point, new Color(0,0,0,255));
+            }
+            foreach (KeyValuePair<Vector2,int> escapedPoint in escapedPoints)
+            {
+                double t = (double)escapedPoint.Value / (double)256;
+
+                int r = (int)(9 * (1 - t)*t*t*t*255);
+                int g = (int)(15 * (1 - t) * (1 - t) * t * t * 255);
+                int b = (int)(8.5 * (1 - t) * (1 - t) * (1 - t) * t * 255);
+                spriteBatch.Draw(image, escapedPoint.Key, new Color(r, g, b, 255));
+                
             }
             spriteBatch.End();
 
@@ -166,8 +173,6 @@ namespace MonoMandlebrot
 
         private Vector2 convertPointToPixel(Vector2 point)
         {
-            //Vector2 pixel = new Vector2(point.X + 2 / imageScale, point.Y + 2 / imageScale) * imageScale / ratio;
-            //Vector2 pixel = new Vector2(point.X - (-1f * imageScale), point.Y - (-1f * imageScale)) / ((2 * imageScale)/ 600f);
             Vector2 pixel = new Vector2(
                 ((point.X - xMin) / ((xMax - xMin) / displayWidth)),
                 ((point.Y - yMin) / ((yMax - yMin) / displayHeight))
@@ -177,6 +182,7 @@ namespace MonoMandlebrot
 
         private void runSomeNumbers()
         {
+            escapedPoints.Clear();
             for (float x = xMin; x <= xMax; x += ((xMax - xMin) / displayWidth))
             {
                 for (float y = yMin; y <= yMax; y += ((yMax - yMin) / displayHeight))
@@ -185,17 +191,19 @@ namespace MonoMandlebrot
                     Vector2 originalPoint = new Vector2(x, y);
                     Vector2 newPoint = new Vector2(x, y);
                     int whilecounter = 0;
-                    while (newPoint.X >= -2F && newPoint.X <= 2F && newPoint.Y >= -2F && newPoint.Y <= 2F && whilecounter < 2000)
+                    while (newPoint.X >= -2F && newPoint.X <= 2F && newPoint.Y >= -2F && newPoint.Y <= 2F && whilecounter < 120)
                     {
                         newPoint = squareComplexNumber(newPoint);
                         newPoint.X += originalPoint.X;
                         newPoint.Y += originalPoint.Y;
                         whilecounter++;
                     }
-                    if ((newPoint.X > 2F || newPoint.X < -2F || newPoint.Y < -2f || newPoint.Y > 2F) && whilecounter < 2000)
+                    if ((newPoint.X > 2F || newPoint.X < -2F || newPoint.Y < -2f || newPoint.Y > 2F) && whilecounter < 120)
                     {
                         //Do nothing if it escaped
                         //Console.WriteLine(originalPoint + ": escaped! With a final result of:" + newPoint);
+                        Vector2 escapedPixelFromPoint = convertPointToPixel(originalPoint);
+                        escapedPoints.Add(escapedPixelFromPoint, whilecounter);
                     }
                     else
                     {
