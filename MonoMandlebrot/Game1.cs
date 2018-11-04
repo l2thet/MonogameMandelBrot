@@ -16,10 +16,10 @@ namespace MonoMandlebrot
         List<Vector2> trappedPoints;
         Dictionary<Vector2, int> escapedPoints;
         Texture2D image;
-        float xMin = -2f;
-        float xMax = 2f;
-        float yMin = -2f;
-        float yMax = 2f;
+        decimal xMin = -2m;
+        decimal xMax = 2m;
+        decimal yMin = -2m;
+        decimal yMax = 2m;
 
         const int displayWidth = 600;
         const int displayHeight = 600;
@@ -57,7 +57,7 @@ namespace MonoMandlebrot
             spriteBatch = new SpriteBatch(GraphicsDevice);
             image = new Texture2D(GraphicsDevice, 1, 1);
             Color[] pixelColor = new Color[1];
-            pixelColor[0] = Color.Green;
+            pixelColor[0] = Color.Blue;
             image.SetData(pixelColor);
             // TODO: use this.Content to load your game content here
         }
@@ -85,42 +85,42 @@ namespace MonoMandlebrot
             var state = Keyboard.GetState();
             if (state.IsKeyDown(Keys.Left))
             {
-                xMin -= .05f;
-                xMax -= .05f;
+                xMin -= .05m;
+                xMax -= .05m;
                 reRunNumbers = !reRunNumbers;
             }
             if (state.IsKeyDown(Keys.Right))
             {
-                xMin += .05f;
-                xMax += .05f;
+                xMin += .05m;
+                xMax += .05m;
                 reRunNumbers = !reRunNumbers;
             }
             if (state.IsKeyDown(Keys.Up))
             {
-                yMin -= .05f;
-                yMax -= .05f;
+                yMin -= .05m;
+                yMax -= .05m;
                 reRunNumbers = !reRunNumbers;
             }
             if (state.IsKeyDown(Keys.Down))
             {
-                yMin += .05f;
-                yMax += .05f;
+                yMin += .05m;
+                yMax += .05m;
                 reRunNumbers = !reRunNumbers;
             }
             if(state.IsKeyDown(Keys.OemPlus) || state.IsKeyDown(Keys.Add))
             {
-                xMin += .1f;
-                xMax -= .1f;
-                yMin += .1f;
-                yMax -= .1f;
+                xMin += .1m;
+                xMax -= .1m;
+                yMin += .1m;
+                yMax -= .1m;
                 reRunNumbers = !reRunNumbers;
             }
             if (state.IsKeyDown(Keys.OemMinus) || state.IsKeyDown(Keys.Subtract))
             {
-                xMin -= .1f;
-                xMax += .1f;
-                yMin -= .1f;
-                yMax += .1f;
+                xMin -= .1m;
+                xMax += .1m;
+                yMin -= .1m;
+                yMax += .1m;
                 reRunNumbers = !reRunNumbers;
             }
 
@@ -140,7 +140,7 @@ namespace MonoMandlebrot
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.White);
+            GraphicsDevice.Clear(Color.Black);
 
             spriteBatch.Begin(SpriteSortMode.Deferred, null, null, null, null, null, Matrix.CreateScale(1));
 
@@ -155,7 +155,7 @@ namespace MonoMandlebrot
                 int r = (int)(9 * (1 - t)*t*t*t*255);
                 int g = (int)(15 * (1 - t) * (1 - t) * t * t * 255);
                 int b = (int)(8.5 * (1 - t) * (1 - t) * (1 - t) * t * 255);
-                spriteBatch.Draw(image, escapedPoint.Key, new Color(r, g, b, 255));
+                spriteBatch.Draw(image, escapedPoint.Key, new Color(r,g,b,250));
                 
             }
             spriteBatch.End();
@@ -174,8 +174,8 @@ namespace MonoMandlebrot
         private Vector2 convertPointToPixel(Vector2 point)
         {
             Vector2 pixel = new Vector2(
-                ((point.X - xMin) / ((xMax - xMin) / displayWidth)),
-                ((point.Y - yMin) / ((yMax - yMin) / displayHeight))
+                ((point.X - (float)xMin) / ((float)(xMax - xMin) / displayWidth)),
+                ((point.Y - (float)yMin) / ((float)(yMax - yMin) / displayHeight))
                 );
             return pixel;
         }
@@ -183,34 +183,32 @@ namespace MonoMandlebrot
         private void runSomeNumbers()
         {
             escapedPoints.Clear();
-            for (float x = xMin; x <= xMax; x += ((xMax - xMin) / displayWidth))
+            for (decimal x = xMin; x <= xMax; x += ((xMax - xMin) / displayWidth))
             {
-                for (float y = yMin; y <= yMax; y += ((yMax - yMin) / displayHeight))
+                for (decimal y = yMin; y <= yMax; y += ((yMax - yMin) / displayHeight))
                 {
 
-                    Vector2 originalPoint = new Vector2(x, y);
-                    Vector2 newPoint = new Vector2(x, y);
+                    Vector2 originalPoint = new Vector2((float)x, (float)y);
+                    Vector2 newPoint = new Vector2((float)x, (float)y);
                     int whilecounter = 0;
-                    while (newPoint.X >= -2F && newPoint.X <= 2F && newPoint.Y >= -2F && newPoint.Y <= 2F && whilecounter < 120)
+                    while (newPoint.X >= -2F && newPoint.X <= 2F && newPoint.Y >= -2F && newPoint.Y <= 2F && whilecounter <= 120)
                     {
                         newPoint = squareComplexNumber(newPoint);
                         newPoint.X += originalPoint.X;
                         newPoint.Y += originalPoint.Y;
                         whilecounter++;
                     }
-                    if ((newPoint.X > 2F || newPoint.X < -2F || newPoint.Y < -2f || newPoint.Y > 2F) && whilecounter < 120)
+                    if ((newPoint.X > 2F || newPoint.X < -2F || newPoint.Y < -2f || newPoint.Y > 2F) && whilecounter <= 120)
                     {
-                        //Do nothing if it escaped
-                        //Console.WriteLine(originalPoint + ": escaped! With a final result of:" + newPoint);
+                        //The escaped points are actually the interesting ones.
                         Vector2 escapedPixelFromPoint = convertPointToPixel(originalPoint);
                         escapedPoints.Add(escapedPixelFromPoint, whilecounter);
                     }
                     else
                     {
-                        //Convert to pixel then add it
-                        Vector2 pixelFromPoint = convertPointToPixel(originalPoint);
-                        trappedPoints.Add(pixelFromPoint);
-                        //Console.WriteLine(originalPoint + ": DID NOT ESCAPE!");
+                        //Not drawing the escaped points as that is boring
+                        //Vector2 pixelFromPoint = convertPointToPixel(originalPoint);
+                        //trappedPoints.Add(pixelFromPoint);
                     }
                 }
             }
