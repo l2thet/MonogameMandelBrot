@@ -16,10 +16,17 @@ namespace MonoMandlebrot
         List<Vector2> trappedPoints;
         Dictionary<Vector2, int> escapedPoints;
         Texture2D image;
-        decimal xMin = -2m;
-        decimal xMax = 2m;
-        decimal yMin = -2m;
-        decimal yMax = 2m;
+        const float min = -2f;
+        const float max = 2f;
+
+        float xOffset = 0;
+        float yOffset = 0;
+
+        float xMin = -2f;
+        float xMax = 2f;
+        float yMin = -2f;
+        float yMax = 2f;
+        float zoomCounter = 1;
 
         const int displayWidth = 600;
         const int displayHeight = 600;
@@ -41,7 +48,6 @@ namespace MonoMandlebrot
         /// </summary>
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
             trappedPoints = new List<Vector2>();
             escapedPoints = new Dictionary<Vector2, int>();
             base.Initialize();
@@ -57,9 +63,8 @@ namespace MonoMandlebrot
             spriteBatch = new SpriteBatch(GraphicsDevice);
             image = new Texture2D(GraphicsDevice, 1, 1);
             Color[] pixelColor = new Color[1];
-            pixelColor[0] = Color.Blue;
+            pixelColor[0] = Color.White;
             image.SetData(pixelColor);
-            // TODO: use this.Content to load your game content here
         }
 
         /// <summary>
@@ -81,47 +86,42 @@ namespace MonoMandlebrot
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            // TODO: Add your update logic here
             var state = Keyboard.GetState();
             if (state.IsKeyDown(Keys.Left))
             {
-                xMin -= .05m;
-                xMax -= .05m;
-                reRunNumbers = !reRunNumbers;
+                //TODO: These should scale with the zoom factor.
+                xOffset -= .05f;
+                SetValues();
             }
             if (state.IsKeyDown(Keys.Right))
             {
-                xMin += .05m;
-                xMax += .05m;
-                reRunNumbers = !reRunNumbers;
+                //TODO: These should scale with the zoom factor.
+                xOffset += .05f;
+                SetValues();
             }
             if (state.IsKeyDown(Keys.Up))
             {
-                yMin -= .05m;
-                yMax -= .05m;
-                reRunNumbers = !reRunNumbers;
+                //TODO: These should scale with the zoom factor.
+                yOffset -= .05f;
+                SetValues();
             }
             if (state.IsKeyDown(Keys.Down))
             {
-                yMin += .05m;
-                yMax += .05m;
-                reRunNumbers = !reRunNumbers;
+                //TODO: These should scale with the zoom factor.
+                yOffset += .05f;
+                SetValues();
             }
             if(state.IsKeyDown(Keys.OemPlus) || state.IsKeyDown(Keys.Add))
             {
-                xMin += .1m;
-                xMax -= .1m;
-                yMin += .1m;
-                yMax -= .1m;
-                reRunNumbers = !reRunNumbers;
+                //TODO: Make this a linear progression.
+                zoomCounter += .1f;
+                SetValues();
             }
-            if (state.IsKeyDown(Keys.OemMinus) || state.IsKeyDown(Keys.Subtract))
+            if (zoomCounter > 1 && (state.IsKeyDown(Keys.OemMinus) || state.IsKeyDown(Keys.Subtract)))
             {
-                xMin -= .1m;
-                xMax += .1m;
-                yMin -= .1m;
-                yMax += .1m;
-                reRunNumbers = !reRunNumbers;
+                //TODO: Also here!
+                zoomCounter -= .1f;
+                SetValues();
             }
 
             if (reRunNumbers)
@@ -132,6 +132,15 @@ namespace MonoMandlebrot
             }
 
             base.Update(gameTime);
+        }
+
+        void SetValues()
+        {
+            xMin = (min / zoomCounter) + xOffset;
+            xMax = (max / zoomCounter) + xOffset;
+            yMin = (min / zoomCounter) + yOffset;
+            yMax = (max / zoomCounter) + yOffset;
+            reRunNumbers = !reRunNumbers;
         }
 
         /// <summary>
@@ -155,7 +164,7 @@ namespace MonoMandlebrot
                 int r = (int)(9 * (1 - t)*t*t*t*255);
                 int g = (int)(15 * (1 - t) * (1 - t) * t * t * 255);
                 int b = (int)(8.5 * (1 - t) * (1 - t) * (1 - t) * t * 255);
-                spriteBatch.Draw(image, escapedPoint.Key, new Color(r,g,b,250));
+                spriteBatch.Draw(image, escapedPoint.Key, new Color(r,g,b,255));
                 
             }
             spriteBatch.End();
@@ -183,13 +192,13 @@ namespace MonoMandlebrot
         private void runSomeNumbers()
         {
             escapedPoints.Clear();
-            for (decimal x = xMin; x <= xMax; x += ((xMax - xMin) / displayWidth))
+            for (float x = xMin; x <= xMax; x += ((xMax - xMin) / displayWidth))
             {
-                for (decimal y = yMin; y <= yMax; y += ((yMax - yMin) / displayHeight))
+                for (float y = yMin; y <= yMax; y += ((yMax - yMin) / displayHeight))
                 {
 
-                    Vector2 originalPoint = new Vector2((float)x, (float)y);
-                    Vector2 newPoint = new Vector2((float)x, (float)y);
+                    Vector2 originalPoint = new Vector2(x, y);
+                    Vector2 newPoint = new Vector2(x, y);
                     int whilecounter = 0;
                     while (newPoint.X >= -2F && newPoint.X <= 2F && newPoint.Y >= -2F && newPoint.Y <= 2F && whilecounter <= 120)
                     {
