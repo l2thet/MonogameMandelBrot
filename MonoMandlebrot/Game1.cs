@@ -19,14 +19,10 @@ namespace MonoMandlebrot
         const float min = -2f;
         const float max = 2f;
 
-        float xOffset = 0;
-        float yOffset = 0;
-
         float xMin = -2f;
         float xMax = 2f;
         float yMin = -2f;
         float yMax = 2f;
-        float zoomCounter = 1;
 
         const int displayWidth = 600;
         const int displayHeight = 600;
@@ -83,64 +79,63 @@ namespace MonoMandlebrot
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
+            var xZoomFactor = (xMax - xMin) / displayWidth * 10;
+            var yZoomFactor = (yMax - yMin) / displayHeight * 10;
+
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
             var state = Keyboard.GetState();
             if (state.IsKeyDown(Keys.Left))
             {
-                //TODO: These should scale with the zoom factor.
-                xOffset -= .05f;
-                SetValues();
+                xMin -= xZoomFactor;
+                xMax -= xZoomFactor;
+                reRunNumbers = !reRunNumbers;
             }
             if (state.IsKeyDown(Keys.Right))
             {
-                //TODO: These should scale with the zoom factor.
-                xOffset += .05f;
-                SetValues();
+                xMin += xZoomFactor;
+                xMax += xZoomFactor;
+                reRunNumbers = !reRunNumbers;
             }
             if (state.IsKeyDown(Keys.Up))
             {
-                //TODO: These should scale with the zoom factor.
-                yOffset -= .05f;
-                SetValues();
+                yMin -= yZoomFactor;
+                yMax -= yZoomFactor;
+                reRunNumbers = !reRunNumbers;
             }
             if (state.IsKeyDown(Keys.Down))
             {
-                //TODO: These should scale with the zoom factor.
-                yOffset += .05f;
-                SetValues();
+                yMin += yZoomFactor;
+                yMax += yZoomFactor;
+                reRunNumbers = !reRunNumbers;
             }
             if(state.IsKeyDown(Keys.OemPlus) || state.IsKeyDown(Keys.Add))
             {
-                //TODO: Make this a linear progression.
-                zoomCounter += .1f;
-                SetValues();
+                xMin += xZoomFactor;
+                xMax -= xZoomFactor;
+                yMin += yZoomFactor;
+                yMax -= yZoomFactor;
+                reRunNumbers = !reRunNumbers;
             }
-            if (zoomCounter > 1 && (state.IsKeyDown(Keys.OemMinus) || state.IsKeyDown(Keys.Subtract)))
+            if (state.IsKeyDown(Keys.OemMinus) || state.IsKeyDown(Keys.Subtract))
             {
-                //TODO: Also here!
-                zoomCounter -= .1f;
-                SetValues();
+                xMin -= xZoomFactor;
+                xMax += xZoomFactor;
+                yMin -= yZoomFactor;
+                yMax += yZoomFactor;
+                reRunNumbers = !reRunNumbers;
             }
 
             if (reRunNumbers)
             {
                 trappedPoints.Clear();
+                escapedPoints.Clear();
                 runSomeNumbers();
                 reRunNumbers = !reRunNumbers;
             }
 
             base.Update(gameTime);
-        }
-
-        void SetValues()
-        {
-            xMin = (min / zoomCounter) + xOffset;
-            xMax = (max / zoomCounter) + xOffset;
-            yMin = (min / zoomCounter) + yOffset;
-            yMax = (max / zoomCounter) + yOffset;
-            reRunNumbers = !reRunNumbers;
         }
 
         /// <summary>
@@ -183,15 +178,15 @@ namespace MonoMandlebrot
         private Vector2 convertPointToPixel(Vector2 point)
         {
             Vector2 pixel = new Vector2(
-                ((point.X - (float)xMin) / ((float)(xMax - xMin) / displayWidth)),
-                ((point.Y - (float)yMin) / ((float)(yMax - yMin) / displayHeight))
+                (point.X - xMin) / ((xMax - xMin) / displayWidth),
+                (point.Y - yMin) / ((yMax - yMin) / displayHeight)
                 );
             return pixel;
         }
 
         private void runSomeNumbers()
         {
-            escapedPoints.Clear();
+            
             for (float x = xMin; x <= xMax; x += ((xMax - xMin) / displayWidth))
             {
                 for (float y = yMin; y <= yMax; y += ((yMax - yMin) / displayHeight))
