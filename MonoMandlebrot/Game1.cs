@@ -13,27 +13,34 @@ namespace MonoMandlebrot
     {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
-        List<Vector2> trappedPoints;
         Dictionary<Vector2, int> escapedPoints;
+        Dictionary<Vector2, Vector2> pointToComplexMapping;
         Texture2D image;
-        const float min = -2f;
-        const float max = 2f;
-
+        
         float xMin = -2f;
         float xMax = 2f;
         float yMin = -2f;
         float yMax = 2f;
 
+        float ComplexX = -2f;
+        float ComplexY = 2f;
+        float XOffset = 0f;
+        float YOffset = 0f;
+
         const int displayWidth = 600;
         const int displayHeight = 600;
 
+
         bool reRunNumbers = true;
+        bool runDraw = true;
+
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
             graphics.PreferredBackBufferHeight = displayHeight;
             graphics.PreferredBackBufferWidth = displayWidth;
             Content.RootDirectory = "Content";
+            IsMouseVisible = true;
         }
 
         /// <summary>
@@ -44,8 +51,8 @@ namespace MonoMandlebrot
         /// </summary>
         protected override void Initialize()
         {
-            trappedPoints = new List<Vector2>();
             escapedPoints = new Dictionary<Vector2, int>();
+            pointToComplexMapping = new Dictionary<Vector2, Vector2>();
             base.Initialize();
         }
 
@@ -79,6 +86,7 @@ namespace MonoMandlebrot
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
+            MouseState ms = Mouse.GetState();
             var xZoomFactor = (xMax - xMin) / displayWidth * 10;
             var yZoomFactor = (yMax - yMin) / displayHeight * 10;
 
@@ -88,26 +96,22 @@ namespace MonoMandlebrot
             var state = Keyboard.GetState();
             if (state.IsKeyDown(Keys.Left))
             {
-                xMin -= xZoomFactor;
-                xMax -= xZoomFactor;
+                XOffset -= (xMax - xMin) / displayWidth * 10;
                 reRunNumbers = !reRunNumbers;
             }
             if (state.IsKeyDown(Keys.Right))
             {
-                xMin += xZoomFactor;
-                xMax += xZoomFactor;
+                XOffset += (xMax - xMin) / displayWidth * 10;
                 reRunNumbers = !reRunNumbers;
             }
             if (state.IsKeyDown(Keys.Up))
             {
-                yMin -= yZoomFactor;
-                yMax -= yZoomFactor;
+                YOffset -= (yMax - yMin) / displayHeight * 10;
                 reRunNumbers = !reRunNumbers;
             }
             if (state.IsKeyDown(Keys.Down))
             {
-                yMin += yZoomFactor;
-                yMax += yZoomFactor;
+                YOffset += (yMax - yMin) / displayHeight * 10;
                 reRunNumbers = !reRunNumbers;
             }
             if(state.IsKeyDown(Keys.OemPlus) || state.IsKeyDown(Keys.Add))
@@ -127,11 +131,40 @@ namespace MonoMandlebrot
                 reRunNumbers = !reRunNumbers;
             }
 
+
+            if (ms.LeftButton == ButtonState.Pressed && IsActive)
+            {
+                runDraw = true;
+                float originalXIncrement = (xMax - xMin) / displayWidth;
+                float originalYIncrement = (yMax - yMin) / displayHeight;
+                XOffset = 0;
+                YOffset = 0;
+                Vector2 complexClickResult = pointToComplexMapping[new Vector2(ms.Position.X, ms.Position.Y)];
+                escapedPoints.Clear();
+                pointToComplexMapping.Clear();
+                xMin = complexClickResult.X - (originalXIncrement * 300);
+                xMax = complexClickResult.X + (originalXIncrement * 300);
+                yMin = complexClickResult.Y - (originalYIncrement * 300);
+                yMax = complexClickResult.Y + (originalYIncrement * 300);
+
+                xMin += xZoomFactor;
+                xMax -= xZoomFactor;
+                yMin += yZoomFactor;
+                yMax -= yZoomFactor;
+
+                Vector2 startingComplexPoint = new Vector2();
+                startingComplexPoint.X = complexClickResult.X - originalXIncrement * 300;
+                startingComplexPoint.Y = complexClickResult.Y + originalYIncrement * 300;
+
+                GeneratePoints(startingComplexPoint.X, startingComplexPoint.Y);
+            }
+
             if (reRunNumbers)
             {
-                trappedPoints.Clear();
+                runDraw = true;
                 escapedPoints.Clear();
-                runSomeNumbers();
+                pointToComplexMapping.Clear();
+                GeneratePoints(null,null);
                 reRunNumbers = !reRunNumbers;
             }
 
@@ -144,27 +177,32 @@ namespace MonoMandlebrot
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.Black);
-
-            spriteBatch.Begin(SpriteSortMode.Deferred, null, null, null, null, null, Matrix.CreateScale(1));
-
-            foreach (Vector2 point in trappedPoints ?? Enumerable.Empty<Vector2>())
+            if(runDraw)
             {
-                spriteBatch.Draw(image, point, new Color(0,0,0,255));
-            }
-            foreach (KeyValuePair<Vector2,int> escapedPoint in escapedPoints)
-            {
-                double t = (double)escapedPoint.Value / (double)256;
+                GraphicsDevice.Clear(Color.Black);
 
-                int r = (int)(9 * (1 - t)*t*t*t*255);
-                int g = (int)(15 * (1 - t) * (1 - t) * t * t * 255);
-                int b = (int)(8.5 * (1 - t) * (1 - t) * (1 - t) * t * 255);
-                spriteBatch.Draw(image, escapedPoint.Key, new Color(r,g,b,255));
-                
-            }
-            spriteBatch.End();
+                spriteBatch.Begin(SpriteSortMode.Deferred, null, null, null, null, null, Matrix.CreateScale(1));
 
-            base.Draw(gameTime);
+                foreach (KeyValuePair<Vector2, int> escapedPoint in escapedPoints)
+                {
+                    if (escapedPoint.Value > 1)
+                    {
+                        double t = (double)escapedPoint.Value / (double)256;
+                        int r = (int)(9 * (1 - t) * t * t * t * 255);
+                        int g = (int)(15 * (1 - t) * (1 - t) * t * t * 255);
+                        int b = (int)(8.5 * (1 - t) * (1 - t) * (1 - t) * t * 255);
+                        spriteBatch.Draw(image, escapedPoint.Key, new Color(r, g, b, 255));
+                    }
+                    else
+                    {
+                        spriteBatch.Draw(image, escapedPoint.Key, new Color(0, 0, 0, 255));
+                    }
+                }
+                spriteBatch.End();
+
+                base.Draw(gameTime);
+                runDraw = false;
+            }
         }
 
         private Vector2 squareComplexNumber(Vector2 complexNumber)
@@ -215,6 +253,72 @@ namespace MonoMandlebrot
                         //trappedPoints.Add(pixelFromPoint);
                     }
                 }
+            }
+        }
+
+        private void GeneratePoints(float? complexX, float? complexY)
+        {
+            for (int pointy = 0; pointy <= displayHeight; pointy++)
+            {
+                if (pointy == 0)
+                {
+                    if(!complexY.HasValue)
+                    {
+                        ComplexY = 2f - YOffset;
+                    }
+                    else
+                    {
+                        ComplexY = complexY.Value;
+                    }
+                }
+                else
+                {
+                    ComplexY -= (yMax - yMin) / displayHeight;
+                }
+                for (int pointx = 0; pointx < displayWidth; pointx++)
+                {
+                    if(pointx == 0)
+                    {
+                        if(!complexX.HasValue)
+                        {
+                            ComplexX = -2f + XOffset;
+                        }
+                        else
+                        {
+                            ComplexX = complexX.Value;
+                        }
+                    }
+                    else
+                    {
+                        ComplexX += (xMax - xMin) / displayWidth;
+                    }
+                    RunEscapeLoop(pointx, pointy);
+                }
+            }
+        }
+
+        private void RunEscapeLoop(float pointx, float pointy)
+        {
+            Vector2 originalPoint = new Vector2(ComplexX, ComplexY);
+            Vector2 newPoint = new Vector2(ComplexX, ComplexY);
+            int whilecounter = 0;
+            while (newPoint.X >= -2F && newPoint.X <= 2F && newPoint.Y >= -2F && newPoint.Y <= 2F && whilecounter <= 120)
+            {
+                newPoint = squareComplexNumber(newPoint);
+                newPoint.X += originalPoint.X;
+                newPoint.Y += originalPoint.Y;
+                whilecounter++;
+            }
+            if ((newPoint.X > 2F || newPoint.X < -2F || newPoint.Y < -2f || newPoint.Y > 2F) && whilecounter <= 120)
+            {
+                //The escaped points are actually the interesting ones.
+                escapedPoints.Add(new Vector2(pointx, pointy), whilecounter);
+                pointToComplexMapping.Add(new Vector2(pointx, pointy), new Vector2(originalPoint.X, originalPoint.Y));
+            }
+            else
+            {
+                escapedPoints.Add(new Vector2(pointx, pointy), 0);
+                pointToComplexMapping.Add(new Vector2(pointx, pointy), new Vector2(originalPoint.X, originalPoint.Y));
             }
         }
     }
