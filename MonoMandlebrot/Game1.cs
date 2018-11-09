@@ -30,6 +30,7 @@ namespace MonoMandlebrot
         const int displayWidth = 600;
         const int displayHeight = 600;
 
+        Vector2 startingComplexPoint = new Vector2();
 
         bool reRunNumbers = true;
         bool runDraw = true;
@@ -152,9 +153,9 @@ namespace MonoMandlebrot
                 yMin += yZoomFactor;
                 yMax -= yZoomFactor;
 
-                Vector2 startingComplexPoint = new Vector2();
+                
                 startingComplexPoint.X = complexClickResult.X - originalXIncrement * 300;
-                startingComplexPoint.Y = complexClickResult.Y + originalYIncrement * 300;
+                startingComplexPoint.Y = complexClickResult.Y + originalYIncrement * 300 + YOffset;
 
                 GeneratePoints(startingComplexPoint.X, startingComplexPoint.Y);
             }
@@ -164,7 +165,14 @@ namespace MonoMandlebrot
                 runDraw = true;
                 escapedPoints.Clear();
                 pointToComplexMapping.Clear();
-                GeneratePoints(null,null);
+                if (startingComplexPoint == Vector2.Zero)
+                {
+                    GeneratePoints(null, null);
+                }
+                else
+                {
+                    GeneratePoints(startingComplexPoint.X + XOffset, startingComplexPoint.Y - YOffset);
+                }
                 reRunNumbers = !reRunNumbers;
             }
 
