@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -29,6 +30,7 @@ namespace MonoMandlebrot
 
         const int displayWidth = 600;
         const int displayHeight = 600;
+        const int maxIterations = 2000;
 
         Vector2 startingComplexPoint = new Vector2();
 
@@ -195,11 +197,31 @@ namespace MonoMandlebrot
                 {
                     if (escapedPoint.Value > 1)
                     {
-                        double t = (double)escapedPoint.Value / (double)256;
-                        int r = (int)(9 * (1 - t) * t * t * t * 255);
-                        int g = (int)(15 * (1 - t) * (1 - t) * t * t * 255);
-                        int b = (int)(8.5 * (1 - t) * (1 - t) * (1 - t) * t * 255);
-                        spriteBatch.Draw(image, escapedPoint.Key, new Color(r, g, b, 255));
+                        //double t = (double)escapedPoint.Value / (double)255;
+                        //int r = (int)(9 * (1 - t) * t * t * t * 255);
+                        //int g = (int)(15 * (1 - t) * (1 - t) * t * t * 255);
+                        //int b = (int)(8.5 * (1 - t) * (1 - t) * (1 - t) * t * 255);
+                        //spriteBatch.Draw(image, escapedPoint.Key, new Color(r, g, b));
+
+
+                        //Grayscale
+                        //double factor = System.Math.Sqrt((double)escapedPoint.Value / (double)maxIterations);
+                        //double intensity = System.Math.Round(500 * factor);
+                        //spriteBatch.Draw(image, escapedPoint.Key, new Color((int)intensity, (int)intensity, (int)intensity));
+
+                        //dual linear in green
+                        double quotient = (double)escapedPoint.Value / (double)180;
+                        double color = ClampTool.Clamp<double>(quotient, 0D, 1D);
+                        if (quotient > 0.5D)
+                        {
+                            spriteBatch.Draw(image, escapedPoint.Key, new Color((float)color, 1f, (float)color));
+                        }
+                        else
+                        {
+                            spriteBatch.Draw(image, escapedPoint.Key, new Color(0f, (float)color, 0f));
+                        }
+
+
                     }
                     else
                     {
@@ -241,14 +263,14 @@ namespace MonoMandlebrot
                     Vector2 originalPoint = new Vector2(x, y);
                     Vector2 newPoint = new Vector2(x, y);
                     int whilecounter = 0;
-                    while (newPoint.X >= -2F && newPoint.X <= 2F && newPoint.Y >= -2F && newPoint.Y <= 2F && whilecounter <= 120)
+                    while (newPoint.X >= -2F && newPoint.X <= 2F && newPoint.Y >= -2F && newPoint.Y <= 2F && whilecounter <= maxIterations)
                     {
                         newPoint = squareComplexNumber(newPoint);
                         newPoint.X += originalPoint.X;
                         newPoint.Y += originalPoint.Y;
                         whilecounter++;
                     }
-                    if ((newPoint.X > 2F || newPoint.X < -2F || newPoint.Y < -2f || newPoint.Y > 2F) && whilecounter <= 120)
+                    if ((newPoint.X > 2F || newPoint.X < -2F || newPoint.Y < -2f || newPoint.Y > 2F) && whilecounter <= maxIterations)
                     {
                         //The escaped points are actually the interesting ones.
                         Vector2 escapedPixelFromPoint = convertPointToPixel(originalPoint);
@@ -256,7 +278,7 @@ namespace MonoMandlebrot
                     }
                     else
                     {
-                        //Not drawing the escaped points as that is boring
+                        //Not drawing the trapped points as that is boring
                         //Vector2 pixelFromPoint = convertPointToPixel(originalPoint);
                         //trappedPoints.Add(pixelFromPoint);
                     }
@@ -328,6 +350,16 @@ namespace MonoMandlebrot
                 escapedPoints.Add(new Vector2(pointx, pointy), 0);
                 pointToComplexMapping.Add(new Vector2(pointx, pointy), new Vector2(originalPoint.X, originalPoint.Y));
             }
+        }
+    }
+
+    public static class ClampTool
+    {
+        public static T Clamp<T>(this T val, T min, T max) where T : IComparable<T>
+        {
+            if (val.CompareTo(min) < 0) return min;
+            else if (val.CompareTo(max) > 0) return max;
+            else return val;
         }
     }
 }

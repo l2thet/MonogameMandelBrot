@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26228.12
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonoMandlebrot", "MonoMandlebrot\MonoMandlebrot.csproj", "{8F60908A-7165-4C05-8926-499BE1908A0B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonoMandelbrot", "MonoMandlebrot\MonoMandelbrot.csproj", "{8F60908A-7165-4C05-8926-499BE1908A0B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,5 +18,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5A8B0954-2396-4150-8D74-5E1D2F25B56B}
 	EndGlobalSection
 EndGlobal
